@@ -4,18 +4,30 @@ set -e
 echo "🚀 Starting Claude Code in Podman Container"
 echo "==========================================="
 
-# Find the git repository root
-GIT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || echo "")"
-if [ -z "$GIT_ROOT" ] || [ ! -d "$GIT_ROOT/.git" ]; then
-    # Fallback: assume we're in podman/ subdirectory
-    SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-    if [[ "$SCRIPT_DIR" == */podman ]]; then
-        GIT_ROOT="${SCRIPT_DIR%/podman}"
-    fi
-    if [ ! -d "$GIT_ROOT/.git" ]; then
-        echo "Error: Not in a git repository. Please run from within the git repo."
-        exit 1
-    fi
+# Validate GIT_ROOT argument
+if [ -z "$1" ]; then
+    echo "❌ Error: No git repository path provided"
+    echo ""
+    echo "Usage: $0 <git-repository-path>"
+    echo ""
+    echo "Example:"
+    echo "  $0 /home/user/my-project"
+    echo "  $0 ~/code/my-repo"
+    exit 1
+fi
+
+GIT_ROOT="$(realpath "$1")"
+
+# Validate that the directory exists and is a git repository
+if [ ! -d "$GIT_ROOT" ]; then
+    echo "❌ Error: Directory '$1' does not exist"
+    exit 1
+fi
+
+if [ ! -d "$GIT_ROOT/.git" ]; then
+    echo "❌ Error: Directory '$GIT_ROOT' is not a git repository"
+    echo "   Initialize it with: git init"
+    exit 1
 fi
 
 echo "Git repository root: $GIT_ROOT"
@@ -58,6 +70,7 @@ echo "  User: $GIT_AUTHOR_NAME <$GIT_AUTHOR_EMAIL>"
 exec podman run --rm -it \
   --userns=keep-id \
   -v "$GIT_ROOT:/git" \
+  -v "$GIT_ROOT/../agent-virt:/agent-virt" \
   -v "$PODMAN_DIR/mount/.bash_history:/home/ubuntu/.bash_history" \
   -v "$PODMAN_DIR/mount/.claude:/home/ubuntu/.claude" \
   -v "$PODMAN_DIR/mount/.claude.json:/home/ubuntu/.claude.json" \

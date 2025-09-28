@@ -1,0 +1,27 @@
+# Scripts and documentation that don't affect container functionality
+claude.sh
+README.md
+*.md
+
+# Git repository files
+.git
+.gitignore
+
+# Local development directories
+mount/
+
+# Temporary and cache files
+*.tmp
+*.log
+.DS_Store
+Thumbs.db
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.directory

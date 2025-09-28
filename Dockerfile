@@ -19,20 +19,17 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y \
     wget \
     && rm -rf /var/lib/apt/lists/*
 
-# Add GitHub CLI repository and install (no gnupg needed)
-RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg -o /usr/share/keyrings/githubcli-archive-keyring.gpg \
-    && chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
-    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
-    && apt-get update \
-    && apt-get install -y gh \
-    && rm -rf /var/lib/apt/lists/*
-
 # Switch to ubuntu user to install Claude
 USER ubuntu
 WORKDIR /home/ubuntu
 
-# Install Claude using the native installer
-RUN curl -fsSL https://claude.ai/install.sh | bash
+# Set up .bashrc with PATH before installing Claude
+RUN echo 'export PATH="$HOME/.local/bin:$HOME/.claude/bin:$PATH"' >> ~/.bashrc && \
+    echo 'export PATH="$HOME/.local/bin:$HOME/.claude/bin:$PATH"' >> ~/.profile
+
+# Install Claude using the native installer (with PATH already configured)
+# Then run claude install to fix the configuration
+RUN . ~/.profile && curl -fsSL https://claude.ai/install.sh | bash 
 
 # Add entrypoint script
 USER root

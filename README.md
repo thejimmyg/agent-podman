@@ -19,51 +19,70 @@ sudo apt update
 sudo apt install podman
 ```
 
-Build:
+Run Claude Code with any git repository:
 
 ```bash
-# Build the container
-podman build -t claude-code .
-# Create git directory for your repositories
-mkdir -p git
+# Run with your git repository
+./claude.sh /path/to/your/git/repo
+
+# Examples:
+./claude.sh ~/code/my-project
+./claude.sh /home/user/work/repository
 ```
 
-Run the container with simplified user mapping
-
-```bash
-# Create directories for persistent config
-mkdir -p claude-config
-
-# Run with selective mounting to preserve config without interfering with Claude
-podman run --rm -it \
-  --userns=keep-id \
-  -v "$(pwd)/git:/git" \
-  -v "$(pwd)/mount/.bash_history:/home/ubuntu/.bash_history" \
-  -v "$(pwd)/mount/.claude:/home/ubuntu/.claude" \
-  -v "$(pwd)/mount/.claude.json:/home/ubuntu/.claude.json" \
-  -e "TZ=$(cat /etc/timezone 2>/dev/null || echo 'UTC')" \
-  -e "GIT_AUTHOR_NAME=Your Name" \
-  -e "GIT_AUTHOR_EMAIL=you@example.com" \
-  -e "GIT_COMMITTER_NAME=Your Name" \
-  -e "GIT_COMMITTER_EMAIL=you@example.com" \
-  claude-code
-```
+The script will automatically:
+- Build the container if needed
+- Set up persistent configuration directories
+- Mount your git repository
+- Configure git settings from your host system
+- Start Claude Code with proper permissions
 
 Note: When mounting specific config directories, Claude installation in `~/.claude` remains in the container. If you mount the entire home directory, you'll need to reinstall Claude on first run with: `curl -fsSL https://claude.ai/install.sh | bash`
 
-To get the latest claude-code version, rebuild the container:
+## Building the Container
+
+The script will automatically build the container if it doesn't exist. To manually rebuild the container:
+
+```bash
+podman build -t claude-code .
+```
+
+To force rebuild (no cache):
 
 ```bash
 podman build --no-cache -t claude-code .
 ```
 
-For server access, you can:
+## Advanced Usage
+
+For manual container usage (if you need custom configuration):
+
+```bash
+# Create directories for persistent config
+mkdir -p mount
+
+# Run with selective mounting to preserve config without interfering with Claude
+podman run --rm -it \
+  --userns=keep-id \
+  -v "/path/to/git/repo:/git" \
+  -v "$(pwd)/mount/.bash_history:/home/ubuntu/.bash_history" \
+  -v "$(pwd)/mount/.claude:/home/ubuntu/.claude" \
+  -v "$(pwd)/mount/.claude.json:/home/ubuntu/.claude.json" \
+  -e "TZ=$(cat /etc/timezone 2>/dev/null || echo 'UTC')" \
+  -e "GIT_AUTHOR_NAME=$(git config user.name)" \
+  -e "GIT_AUTHOR_EMAIL=$(git config user.email)" \
+  -e "GIT_COMMITTER_NAME=$(git config user.name)" \
+  -e "GIT_COMMITTER_EMAIL=$(git config user.email)" \
+  claude-code
+```
+
+For server access, you can add port mapping or network options to the above command:
 ```bash
 # Map specific ports
-podman run -p 8080:8080 ... claude-code
+-p 8080:8080
 
 # Use host networking (less secure but convenient)
-podman run --network host ... claude-code
+--network host
 ```
 
 ## What This Provides
